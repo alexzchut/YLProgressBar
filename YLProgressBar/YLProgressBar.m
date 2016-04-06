@@ -55,6 +55,10 @@ const CGFloat YLProgressBarDefaultProgress = 0.3f;
 
 /** Draw the background (track) of the slider. */
 - (void)drawTrack:(CGContextRef)context withRect:(CGRect)rect;
+/** Draw the progress bar. with gradient*/
+- (void)drawProgressBarWithGradient:(CGContextRef)context withRect:(CGRect)rect;
+/** Draw the progress bar. with no gradient*/
+- (void)drawProgressBarWithNoGradient:(CGContextRef)context withRect:(CGRect)rect maxRect:(CGRect)maxRect;
 /** Draw the progress bar. */
 - (void)drawProgressBar:(CGContextRef)context withInnerRect:(CGRect)innerRect outterRect:(CGRect)outterRect;
 /** Draw the gloss into the given rect. */
@@ -166,7 +170,11 @@ const CGFloat YLProgressBarDefaultProgress = 0.3f;
     [self drawStripes:context withRect:rect];
   } else if (self.progress > 0)
   {
-    [self drawProgressBar:context withInnerRect:innerRect outterRect:rect];
+      if (_gradientType == YLProgressBarWithGradient)  {
+          [self drawProgressBar:context withInnerRect:innerRect outterRect:rect];
+      } else {
+          [self drawProgressBarWithNoGradient:context withRect:rect maxRect:innerRect];
+      }
 
     if (_stripesWidth > 0 && !_hideStripes)
     {
@@ -190,7 +198,7 @@ const CGFloat YLProgressBarDefaultProgress = 0.3f;
     // Draw the indicator text if necessary
     if (_indicatorTextDisplayMode == YLProgressBarIndicatorTextDisplayModeProgress)
     {
-      [self drawText:context withRect:innerRect];
+        [self drawText:context withRect:innerRect];
     }
   }
 }
@@ -356,6 +364,8 @@ const CGFloat YLProgressBarDefaultProgress = 0.3f;
   self.stripesDelta             = YLProgressBarDefaultStripeDelta;
   self.progressBarInset         = YLProgressBarDefaultSizeInset;
   self.backgroundColor          = [UIColor clearColor];
+  self.gradientType             = YLProgressBarWithNoGradient;
+
 }
 
 - (UIBezierPath *)stripeWithOrigin:(CGPoint)origin bounds:(CGRect)frame orientation:(YLProgressBarStripesOrientation)orientation
@@ -469,6 +479,43 @@ const CGFloat YLProgressBarDefaultProgress = 0.3f;
   CGContextRestoreGState(context);
 
   CGColorSpaceRelease(colorSpace);
+}
+
+- (void)drawProgressBarWithNoGradient:(CGContextRef)context withRect:(CGRect)rect maxRect:(CGRect)maxRect
+{
+    CGColorSpaceRef colorSpace  = CGColorSpaceCreateDeviceRGB();
+    
+    CGContextSaveGState(context);
+    {
+        UIBezierPath *progressBounds    = [UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:_cornerRadius];
+        CGContextAddPath(context, [progressBounds CGPath]);
+        CGContextClip(context);
+        int colorCount       = [_colors count];
+        
+        for (int i = 0; i < colorCount; i ++) {
+            float startMult = (float)i / colorCount;
+            float endMult = (float)(i+1) / colorCount;
+            float startX = CGRectGetMaxX(rect) * startMult;
+            float with = CGRectGetMaxX(rect) * endMult;
+            CGRect frame = CGRectMake(startX, CGRectGetMinY(rect), with, CGRectGetMaxY(rect));
+            if (CGRectContainsRect(maxRect, frame)) {
+                [self paintFrame:frame WithContect:context color:(__bridge CGColorRef)(_colors[i])];
+            } else if (CGRectContainsPoint(maxRect, frame.origin)) {
+                frame = CGRectMake(startX, frame.origin.y, maxRect.size.width - startX, frame.size.height);
+                [self paintFrame:frame WithContect:context color:(__bridge CGColorRef)(_colors[i])];
+            } else {
+                [self paintFrame:frame WithContect:context color:[UIColor clearColor].CGColor];
+            }
+        }
+    }
+    CGContextRestoreGState(context);
+    CGColorSpaceRelease(colorSpace);
+}
+
+- (void)paintFrame:(CGRect)frame WithContect:(CGContextRef)context color:(CGColorRef)color{
+    CGContextClearRect(context, frame);
+    CGContextSetFillColorWithColor(context, color);
+    CGContextFillRect(context, frame);
 }
 
 - (void)drawGloss:(CGContextRef)context withRect:(CGRect)rect

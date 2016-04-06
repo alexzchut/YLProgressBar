@@ -33,6 +33,22 @@
 #define YLProgressBarDefaultStripeDelta 8 //px
 
 /**
+ * The progress bar gradient type.
+ */
+typedef NS_ENUM (NSUInteger, YLProgressGradientType)
+{
+    /**
+     * The progress bar has rounded corners and the gloss effect.
+     */
+    YLProgressBarWithGradient = 0,
+    /**
+     * The progress bar has squared corners and no gloss.
+     */
+    YLProgressBarWithNoGradient = 1,
+};
+
+
+/**
  * The progress bar appearance.
  */
 typedef NS_ENUM (NSUInteger, YLProgressBarType)
@@ -345,5 +361,11 @@ IB_DESIGNABLE @interface YLProgressBar : UIView
  * setting it to NO shows the track. The default value is NO.
  */
 @property (nonatomic, assign) IBInspectable BOOL hideTrack;
+
+/**
+ * @abstract The type of the progress bar.
+ * @discussion The default value is set to YLProgressBarWithGradient.
+ */
+@property (nonatomic, assign) YLProgressGradientType gradientType; //UI_APPEARANCE_SELECTOR;
 
 @end
